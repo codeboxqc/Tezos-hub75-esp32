@@ -111,3 +111,83 @@ board_build.psram = enabled
 
 
 
+
+## Important: Save/Favorite Button & PHP Server
+
+The "Save" button (web UI and physical GPIO 0 button) calls a server endpoint:  
+`https://your-server.com/led-art/save.php?url=ENCODED_IMAGE_URL`
+
+This originally points to `https://paradox.ovh/led-art/save.php` (likely for marking favorites or logging).
+
+**Do you need your own server?**  
+- **No**, if you just want to display art (skip saving favorites).  
+- **Yes**, if you want the Save button to work (e.g., add to your personal favorites list).
+
+### Option 1: Disable Save Feature (No Server Needed)
+Comment out or remove these parts in the code:
+- In `saveCurrentOriginal()` function (main.cpp)
+- The `/api/save` endpoint in web.cpp
+- The "Save" button in the HTML
+
+### Option 2: Set Up Your Own Simple PHP Server
+1. Get web hosting with PHP support (e.g., shared hosting like Bluehost, Hostinger, or free options like 000webhost).
+2. Create a folder (e.g., `/led-art/`).
+3. Upload two files:
+
+**save.php** (basic example – logs to a file):
+```php
+<?php
+// Simple save.php - logs the saved URL to a file
+$url = $_GET['url'] ?? 'no_url';
+
+$file = 'favorites.txt';
+$current = file_get_contents($file);
+$current .= urldecode($url) . "\n";
+file_put_contents($file, $current);
+
+echo "Saved!";
+?>
+
+
+Compilation & Upload (Arduino IDE)
+
+Install ESP32 board package (Boards Manager → esp32 by Espressif).
+Install libraries (Sketch → Include Library → Manage Libraries):
+ESPAsyncWebServer (me-no-dev)
+AsyncTCP
+ElegantOTA
+ESP32-HUB75-MatrixPanel-I2S-DMA (mrfaptastic)
+JPEGDecoder (Bodmer)
+ArduinoJson (Benoit Blanchon)
+Preferences (built-in)
+
+Board settings:
+Board: ESP32 Dev Module
+PSRAM: Enabled (if your board has it)
+Partition Scheme: Default with OTA
+
+Copy the provided main.cpp and web.cpp into a new sketch.
+Upload!
+
+First Boot & Setup
+
+Device creates open Wi-Fi AP: TEZ
+Connect and visit http://192.168.4.1
+Configure your home Wi-Fi
+Device restarts, connects, and starts displaying art
+
+Access web control at the device's local IP.
+Customization
+
+Change playlist URL in web UI
+Max artworks: Edit MAX_COLLECTION (default 10)
+Disable save: See above
+
+Enjoy your personal Tezos NFT art wall! 🎨✨
+
+
+
+
+
+
+
