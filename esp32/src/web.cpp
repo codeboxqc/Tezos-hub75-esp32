@@ -14,6 +14,8 @@ extern void triggerServerUpdate();
 extern uint32_t rotateTimer;
 extern uint32_t sec15;
 
+void resetWiFiConfig();
+
 extern MatrixPanel_I2S_DMA *display;
 extern Art collection[];
 
@@ -32,7 +34,7 @@ WebConfig webConfig = {
 
 Preferences preferences;
 
-// HTML Configuration Page (same as before)
+// HTML Configuration Page
 const char CONFIG_PAGE[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
@@ -251,10 +253,13 @@ const char CONFIG_PAGE[] PROGMEM = R"rawliteral(
                     <span class="slider-value" id="textDelayValue">12s</span>
                 </div>
             </div>
+            <div class="button-grid">
+                <button class="btn btn-success" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
         </div>
 
         <div class="panel">
-            <h2>📡 WiFi Configuration</h2>
+            <h2>🌐 WiFi Configuration</h2>
             <div class="control-group">
                 <label>Network SSID</label>
                 <input type="text" id="wifiSSID" placeholder="Enter WiFi name">
@@ -351,6 +356,12 @@ const char CONFIG_PAGE[] PROGMEM = R"rawliteral(
             fetch('/api/set?textDelay=' + val);
         }
 
+        function saveSettings() {
+            fetch('/api/saveSettings')
+                .then(r => r.text())
+                .then(msg => alert('💾 ' + msg));
+        }
+
         function nextImage() {
             fetch('/api/next');
             setTimeout(loadStatus, 1000);
@@ -395,7 +406,7 @@ const char CONFIG_PAGE[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-// Load configuration from flash
+// Load configuration from flash - CHECKS ON BOOT
 void handleLoadConfig() {
     if (!preferences.begin("artwall", true)) {  // Read-only mode first
         Serial.println("⚠️  Failed to open preferences for reading");
@@ -403,19 +414,27 @@ void handleLoadConfig() {
         
         // Try to initialize with defaults
         if (preferences.begin("artwall", false)) {
-            preferences.putString("ssid", "user");
-            preferences.putString("password", "pass");
+            preferences.putString("ssid", "");
+            preferences.putString("password", "");
             preferences.putString("playlist", "https://paradox.ovh/led-art/nfts.json");
             preferences.putString("update", "https://paradox.ovh/led-art/update.php");
             preferences.putString("favorite", "");
+            preferences.putUInt("rotateTime", 40000);
+            preferences.putUInt("textDelay", 12000);
+            preferences.putUChar("brightness", 255);
+            preferences.putBool("favOnly", false);
+            preferences.putBool("configured", false);  // Mark as not configured
             preferences.end();
             Serial.println("✓ Initialized preferences with defaults");
         }
         return;
     }
     
-    String ssid = preferences.getString("ssid", "user");
-    String password = preferences.getString("password", "pass");
+    // Check if system has been configured before
+    bool isConfigured = preferences.getBool("configured", false);
+    
+    String ssid = preferences.getString("ssid", "");
+    String password = preferences.getString("password", "");
     String playlist = preferences.getString("playlist", "https://paradox.ovh/led-art/nfts.json");
     String update = preferences.getString("update", "https://paradox.ovh/led-art/update.php");
     String favorite = preferences.getString("favorite", "");
@@ -431,10 +450,25 @@ void handleLoadConfig() {
     webConfig.brightness = preferences.getUChar("brightness", 255);
     webConfig.showFavoritesOnly = preferences.getBool("favOnly", false);
     
+    // Apply loaded settings to runtime
+    rotateTimer = webConfig.rotateTimer;
+    sec15 = webConfig.textDelay;
+    if (display) {
+        display->setBrightness8(webConfig.brightness);
+    }
+    
     preferences.end();
     
-    Serial.printf("✓ Config loaded: SSID='%s', Brightness=%d\n", 
-                  webConfig.ssid, webConfig.brightness);
+    if (isConfigured && ssid.length() > 0) {
+        Serial.println("✓ Configuration loaded from ESP32:");
+        Serial.printf("  SSID: '%s'\n", webConfig.ssid);
+        Serial.printf("  Brightness: %d\n", webConfig.brightness);
+        Serial.printf("  Rotation: %d ms\n", webConfig.rotateTimer);
+        Serial.printf("  Text Delay: %d ms\n", webConfig.textDelay);
+    } else {
+        Serial.println("⚠️  No saved configuration found - waiting for user setup");
+        Serial.println("   Connect to AP mode and configure WiFi settings");
+    }
 }
 
 // Reset WiFi credentials
@@ -446,12 +480,13 @@ void resetWiFiConfig() {
     
     preferences.putString("ssid", "");
     preferences.putString("password", "");
+    preferences.putBool("configured", false);
     preferences.end();
     
     Serial.println("WiFi credentials cleared");
 }
 
-// Handle status request - FIXED: Use static buffer to avoid String fragmentation
+// Handle status request
 void handleGetStatus(AsyncWebServerRequest *request) {
     static char jsonBuffer[512];
     
@@ -473,7 +508,7 @@ void handleGetStatus(AsyncWebServerRequest *request) {
     request->send(200, "application/json", jsonBuffer);
 }
 
-// Handle config request - FIXED: Use static buffer
+// Handle config request
 void handleAPI(AsyncWebServerRequest *request) {
     static char jsonBuffer[512];
     
@@ -490,7 +525,7 @@ void handleAPI(AsyncWebServerRequest *request) {
     request->send(200, "application/json", jsonBuffer);
 }
 
-// FIXED: Safe JSON parsing helper
+// Safe JSON parsing helper
 bool extractJsonString(const String& json, const char* key, char* output, size_t maxLen) {
     String searchKey = String("\"") + key + "\":\"";
     int start = json.indexOf(searchKey);
@@ -546,9 +581,11 @@ void setupWebServer(AsyncWebServer* server) {
         request->send(200, "text/plain", "Refreshed");
     });
     
+    // Runtime updates (temporary, not saved)
     server->on("/api/set", HTTP_GET, [](AsyncWebServerRequest *request){
         if (request->hasParam("rotation")) {
             rotateTimer = request->getParam("rotation")->value().toInt() * 1000;
+            webConfig.rotateTimer = rotateTimer;
         }
         if (request->hasParam("brightness")) {
             uint8_t val = request->getParam("brightness")->value().toInt();
@@ -557,11 +594,31 @@ void setupWebServer(AsyncWebServer* server) {
         }
         if (request->hasParam("textDelay")) {
             sec15 = request->getParam("textDelay")->value().toInt() * 1000;
+            webConfig.textDelay = sec15;
         }
         request->send(200, "text/plain", "OK");
     });
     
-    // WiFi save - FIXED: Safe parsing
+    // NEW: Save settings to ESP32 flash
+    server->on("/api/saveSettings", HTTP_GET, [](AsyncWebServerRequest *request){
+        if (!preferences.begin("artwall", false)) {
+            request->send(500, "text/plain", "Storage error");
+            return;
+        }
+        
+        // Save current runtime values to flash
+        preferences.putUInt("rotateTime", rotateTimer);
+        preferences.putUInt("textDelay", sec15);
+        preferences.putUChar("brightness", webConfig.brightness);
+        preferences.putBool("configured", true);  // Mark as configured
+        
+        preferences.end();
+        
+        Serial.println("✓ Settings saved to ESP32 flash");
+        request->send(200, "text/plain", "Settings saved to ESP32!");
+    });
+    
+    // WiFi save - Saves and restarts
     server->on("/api/saveWiFi", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
         
@@ -589,9 +646,11 @@ void setupWebServer(AsyncWebServer* server) {
         
         preferences.putString("ssid", ssid);
         preferences.putString("password", password);
+        preferences.putBool("configured", true);  // Mark as configured
         preferences.end();
         
-        request->send(200, "text/plain", "WiFi saved");
+        Serial.printf("✓ WiFi saved to ESP32: SSID='%s'\n", ssid);
+        request->send(200, "text/plain", "WiFi saved to ESP32");
         
         delay(500);
         ESP.restart();
@@ -606,4 +665,59 @@ void setupWebServer(AsyncWebServer* server) {
     });
     
     Serial.println("✓ Web server configured");
+}
+
+// Save configuration to flash (legacy function - can be called manually)
+void handleSaveConfig(AsyncWebServerRequest *request) {
+    preferences.begin("artwall", false);
+    
+    if (request->hasParam("playlistUrl", true)) {
+        String url = request->getParam("playlistUrl", true)->value();
+        preferences.putString("playlist", url);
+        strlcpy(webConfig.playlistUrl, url.c_str(), 128);
+    }
+    
+    if (request->hasParam("updateUrl", true)) {
+        String url = request->getParam("updateUrl", true)->value();
+        preferences.putString("update", url);
+        strlcpy(webConfig.updateUrl, url.c_str(), 128);
+    }
+    
+    if (request->hasParam("favoriteAddress", true)) {
+        String addr = request->getParam("favoriteAddress", true)->value();
+        preferences.putString("favorite", addr);
+        strlcpy(webConfig.favoriteAddress, addr.c_str(), 64);
+    }
+    
+    if (request->hasParam("showFavoritesOnly", true)) {
+        bool val = request->getParam("showFavoritesOnly", true)->value() == "true";
+        preferences.putBool("favOnly", val);
+        webConfig.showFavoritesOnly = val;
+    }
+    
+    if (request->hasParam("rotateTimer", true)) {
+        uint32_t val = request->getParam("rotateTimer", true)->value().toInt();
+        preferences.putUInt("rotateTime", val);
+        webConfig.rotateTimer = val;
+        rotateTimer = val;
+    }
+    
+    if (request->hasParam("textDelay", true)) {
+        uint32_t val = request->getParam("textDelay", true)->value().toInt();
+        preferences.putUInt("textDelay", val);
+        webConfig.textDelay = val;
+        sec15 = val;
+    }
+    
+    if (request->hasParam("brightness", true)) {
+        uint8_t val = request->getParam("brightness", true)->value().toInt();
+        preferences.putUChar("brightness", val);
+        webConfig.brightness = val;
+        display->setBrightness8(val);
+    }
+    
+    preferences.putBool("configured", true);
+    preferences.end();
+    
+    request->send(200, "text/plain", "Configuration saved successfully");
 }
