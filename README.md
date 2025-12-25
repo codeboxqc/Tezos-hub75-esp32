@@ -2,8 +2,11 @@
 <div align="center"> 
 
 
+first connect to tez wifi
+![a (1)](https://github.com/user-attachments/assets/690bbda8-0f4b-46ab-9331-7ee01af4cd8f)
 
-
+validate user passowd wifi only once 192.168.4.1  browser / save
+![a (2)](https://github.com/user-attachments/assets/05e85958-3e2b-4af0-af33-9a70f21032ad)
 
 Tezos Art Wall – ESP32 LED Matrix Display
 This project turns an ESP32 with a 64×64 HUB75 LED matrix panel into a beautiful digital art wall that displays Tezos NFT artworks. It automatically cycles through a curated playlist, shows artwork metadata, and provides a full web-based control interface.
