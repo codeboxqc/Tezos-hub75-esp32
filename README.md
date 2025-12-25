@@ -15,6 +15,10 @@ Features
 
 
 
+result to expect (when text scool click reset esp32 button image is save to server
+https://github.com/user-attachments/assets/53a7facc-e402-4e65-8b3c-a6646d2f59ec
+
+
 
 What You Need!
 -ESP32
