@@ -201,7 +201,7 @@ DynamicJsonDocument jsonDoc(10240);
 
 
  
-// ===== ADD TO TOP OF FILE (after includes) =====
+// ==========
 
 // Enable watchdog monitoring
 #include "esp_system.h"
@@ -773,7 +773,7 @@ void setup() {
     /*
     uint8_t* testBuf = (uint8_t*)malloc(250000);
     if (testBuf) {
-        Serial.println("✅ 250KB malloc SUCCESS - could handle 128×128 hub65  4 hub");
+        Serial.println("✅ 250KB malloc SUCCESS - could handle 128×128 hub75  4 hub");
         free(testBuf);
     } else {
         Serial.println("❌ 250KB malloc FAILED - cannot handle 128×128");
@@ -786,7 +786,19 @@ void setup() {
 Serial.println("Init defrag..."); 
 Serial.flush();
 
-//resetWiFiConfig();  //password user
+
+
+/////////////////////////////////////////////////////
+// resetWiFiConfig();  //password user
+
+
+
+
+//////////////////////////////////////////////////////////
+
+
+
+
 
 ///////////////////////////////////////////////
    printRebootReason(); // See WHY it rebooted
@@ -854,36 +866,7 @@ Serial.flush();
 
      Wi();
 
-     /*
-    showStatus("WIFI....", 0xFFE0);
-    WiFi.begin(ssid, password);
-    int retries = 0;
-    while (WiFi.status() != WL_CONNECTED && retries < 20) {
-        delay(500);
-        retries++;
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
-        Serial.printf("\n✓ Connected to WiFi\n");
-        Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
-        
-        // Show IP address on display for 5 seconds
-        display->fillScreen(0);
-        display->setTextSize(1);
-        display->setTextColor(0x07E0);
-        display->setCursor(8, 20);
-        display->print("WIFI OK!");
-        display->setTextColor(0x07FF);
-        display->setCursor(2, 35);
-        display->print(WiFi.localIP().toString().c_str());
-        delay(3000);  // Show for 3 seconds
-        
-    } else {
-        showStatus("WIFI FAIL", 0xF800);
-        Serial.println("\n✗ WiFi connection failed");
-        delay(5000);
-    }
-   */
+      
   
 
     ElegantOTA.begin(&server);
@@ -996,88 +979,4 @@ void loop() {
     delay(5);
 }
 
-void loop2() {
-    static unsigned long lastWatchdogFeed = 0;
-    static unsigned long lastHeapCheck = 0;
-    static uint32_t minHeap = 0xFFFFFFFF;
-
-     if (millis() - lastHeapCheck > 30000) {
-        uint32_t freeHeap = ESP.getFreeHeap();
-        if (freeHeap < minHeap) {
-            minHeap = freeHeap;
-            Serial.printf(" New min heap: %d bytes\n", minHeap);
-        }
-        Serial.printf("Heap: %d bytes (min: %d)\n", freeHeap, minHeap);
-        lastHeapCheck = millis();
-    }
-
-   // updateBrightness();
-
-    // Main rotation timer
-    if (millis() - lastSwitch > rotateTimer || lastSwitch == 0) {
-        lastSwitch = millis();
-        displayNext();
-        if (udp.beginPacket("255.255.255.255", 4210)) {
-            udp.write(currentIndex);
-            if (!udp.endPacket())    Serial.println("UDP packet not sent");
-            udp.endPacket();
-        }
-    }
-
-    // Skip text animation if no images loaded
-    if (artCount == 0) {
-        delay(100);
-        return;
-    }
-
-    // Wait before showing text
-    if (millis() - imageShownTime < sec15) {
-        yield();
-        delay(30);         
-        return;
-    }
-
-    // Start text animation
-    if (!textActive) {
-        textActive = true;
-        textX = PANEL_RES_X;
-    }  
-
-    // Animate scrolling text
-    if (textActive) {
-        static unsigned long lastMove = 0;
-        if (millis() - lastMove > 30) { // Speed control (30ms per pixel)
-            lastMove = millis();
-            
-            // Clear only the text strip
-            display->fillRect(0, 56, 64, 8, 0); 
-            display->setTextColor(display->color565(0, 255, 0)); // Pure Green
-            display->setCursor(textX, 56);
-            display->print(scrollText);
-            
-            textX -= 1;
-
-            // Calculate exact width: approx 6 pixels per character
-            int textWidth = strlen(scrollText) * 6;
-            if (textX < -textWidth) {
-                textX = PANEL_RES_X; // Reset to right side
-            }
-        }
-    } 
-
-    // Button handling with proper debouncing
-    static unsigned long lastButtonPress = 0;
-    if (digitalRead(BUTTON_SAVE_PIN) == LOW) {
-        if (!savePressed && (millis() - lastButtonPress > 500)) {
-            savePressed = true;
-            lastButtonPress = millis();
-            saveCurrentOriginal();
-             
-        }
-    } else {
-        savePressed = false; // Reset when button released
-    }
-
-    yield();
- 
-}
+  
