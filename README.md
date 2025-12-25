@@ -11,6 +11,17 @@ Features
 
 
 
+What You Need!
+-ESP32
+-HUB75
+-Your Server to run the code
+
+update code main.cpp
+char ssid[32] = "user";
+char password[64] = "pass";
+char playlistUrl[128] = "https://yourserver.cc/led-art/nfts.json";
+char updateUrl[128]   = "https://yourserver.cc/led-art/update.php";
+
 
 # Tezos Art Wall – ESP32 LED Matrix NFT Display
 
