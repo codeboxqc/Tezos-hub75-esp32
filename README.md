@@ -16,6 +16,15 @@ What You Need!
 -HUB75
 -Your Server to run the code
 
+
+
+tezos fav gallery edit update.php edit 
+$hardcoded_users = [
+    "tz1PUc3oQk3PpVGYRWmgQ6JHuk6rrHkP7K1Z",
+
+
+    ]
+
 update code main.cpp
 char ssid[32] = "user";
 char password[64] = "pass";
