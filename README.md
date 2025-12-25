@@ -1,5 +1,5 @@
 <div align="center"> <img src="https://img.shields.io/badge/PlatformIO-Compatible-brightgreen?style=for-the-badge&logo=platformio" alt="PlatformIO"> <img src="https://img.shields.io/badge/ESP32-Compatible-blue?style=for-the-badge&logo=espressif" alt="ESP32"> <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"> <img src="https://img.shields.io/badge/Version-1.0.0-orange?style=for-the-badge" alt="Version"> <img src="https://img.shields.io/badge/Arduino-Framework-yellow?style=for-the-badge&logo=arduino" alt="Arduino"> <img src="https://img.shields.io/badge/Tezos-Art%20Wall-009688?style=for-the-badge&logo=ethereum" alt="Tezos"> </div>
-<div align="center"> <img src="https://img.shields.io/github/last-commit/your-repo/tezos-art-wall?style=flat-square&color=blue" alt="Last Commit"> <img src="https://img.shields.io/github/issues/your-repo/tezos-art-wall?style=flat-square&color=orange" alt="Issues"> <img src="https://img.shields.io/github/stars/your-repo/tezos-art-wall?style=flat-square&color=yellow" alt="Stars"> <img src="https://img.shields.io/github/forks/your-repo/tezos-art-wall?style=flat-square&color=green" alt="Forks"> </div>
+<div align="center"> 
 
 
 Tezos Art Wall – ESP32 LED Matrix Display
