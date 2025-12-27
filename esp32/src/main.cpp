@@ -138,8 +138,9 @@ public:
         client.setTimeout(8000);
 
         HTTPClient http;
+ 
         
-        //  http.useHTTP10(true);
+         http.useHTTP10(true);
          if (!http.begin(client, url)) {
             Serial.println("HTTPS begin failed");
               return false;
@@ -697,8 +698,36 @@ bool Wi() {
             char statusMsg[16];
             snprintf(statusMsg, sizeof(statusMsg), "WiFi %d/%d", attempt, maxAttempts);
             showStatus(statusMsg, 0xFFE0);
+
             
+
+            
+
+           //“Golden Setup” 
+           //.................................
             WiFi.mode(WIFI_STA);
+            WiFi.setSleep(false);
+            WiFi.setAutoReconnect(true);
+            WiFi.persistent(false);
+           // WiFi.setProtocol(WIFI_PROTOCOL_11N);
+            WiFi.setTxPower(WIFI_POWER_19_5dBm);
+            //esp_wifi_set_ps(WIFI_PS_NONE);
+
+            IPAddress dns(1,1,1,1);//cloud flare
+            WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, dns);
+            ///////////////////////////////////////////////////
+
+
+
+
+
+           //....................................
+
+
+
+
+            
+           // WiFi.mode(WIFI_STA);
             WiFi.begin(webConfig.ssid, webConfig.password);  // Use webConfig, not ssid/password
             
             int retries = 0;
