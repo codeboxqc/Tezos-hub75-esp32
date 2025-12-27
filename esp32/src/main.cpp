@@ -140,7 +140,7 @@ public:
         HTTPClient http;
  
         
-         http.useHTTP10(true);
+        // http.useHTTP10(true);
          if (!http.begin(client, url)) {
             Serial.println("HTTPS begin failed");
               return false;
@@ -429,7 +429,7 @@ bool downloadImage(const char* url) {
     snprintf(ncUrl, sizeof(ncUrl), "%s?nc=%lu", updateUrl, millis());
     
     HTTPClient http;
-    http.useHTTP10(true);///////////////
+   // http.useHTTP10(true);///////////////
     http.begin(ncUrl);
     http.setTimeout(20000); 
     yield();
