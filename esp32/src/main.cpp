@@ -133,8 +133,18 @@ public:
     bool download(const char* url) {
         if (WiFi.status() != WL_CONNECTED || !_buffer) return false;
 
+        WiFiClientSecure client;
+       client.setInsecure();                 // or setCACert(...)
+        client.setTimeout(8000);
+
         HTTPClient http;
-        http.begin(url);
+        
+        //  http.useHTTP10(true);
+         if (!http.begin(client, url)) {
+            Serial.println("HTTPS begin failed");
+              return false;
+               }
+        
         http.setTimeout(10000); // 10 second connection timeout
         
         // Add headers to prevent caching issues
@@ -147,6 +157,7 @@ public:
             if (contentLength > _maxSize) {
                 Serial.printf("Download error: Image size (%d) > Buffer (%d)\n", contentLength, _maxSize);
                 http.end();
+                client.stop(); 
                 return false;
             }
 
@@ -156,6 +167,8 @@ public:
             unsigned long startMillis = millis();
             while (http.connected() && (_lastImageSize < contentLength || contentLength == -1)) {
                 size_t avail = stream->available();
+
+                
                 if (avail) {
                     // Read data directly into our persistent buffer
                     size_t read = stream->readBytes(_buffer + _lastImageSize, 
@@ -177,6 +190,7 @@ public:
         
         Serial.printf("HTTP GET Failed, error: %s\n", http.errorToString(httpCode).c_str());
         http.end();
+        client.stop(); 
         return false;
     }
 
@@ -302,6 +316,7 @@ void drawJPEG() {
         return;
     }
     
+    uint32_t lastYield = millis();
     int blockCount = 0;
     while (JpegDec.read()) {
         uint16_t* pixels = JpegDec.pImage;
@@ -309,6 +324,12 @@ void drawJPEG() {
         int baseY = JpegDec.MCUy * JpegDec.MCUHeight;
         
         display->drawRGBBitmap(baseX, baseY, pixels, JpegDec.MCUWidth, JpegDec.MCUHeight);
+
+        // 🟢 watchdog feed every 5ms
+    if (millis() - lastYield > 5) {
+      yield();
+      lastYield = millis();
+    }
         
         // Feed watchdog every 8 blocks to prevent timeout
         if (++blockCount % 8 == 0) {
@@ -377,6 +398,10 @@ bool downloadImage(const char* url) {
         return false;
     }
 
+    WiFiClientSecure client;
+    client.setInsecure();                 // or setCACert(...)
+    client.setTimeout(8000);  
+
     if (defrag.download(url)) {
         // Double check we actually got data
         if (defrag.getSize() > 100) { 
@@ -403,8 +428,10 @@ bool downloadImage(const char* url) {
     snprintf(ncUrl, sizeof(ncUrl), "%s?nc=%lu", updateUrl, millis());
     
     HTTPClient http;
+    http.useHTTP10(true);///////////////
     http.begin(ncUrl);
     http.setTimeout(20000); 
+    yield();
     
     int httpCode = http.GET();
     
