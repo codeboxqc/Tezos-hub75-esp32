@@ -431,7 +431,7 @@ bool downloadImage(const char* url) {
     HTTPClient http;
    // http.useHTTP10(true);///////////////
     http.begin(ncUrl);
-    http.setTimeout(20000); 
+    http.setTimeout(40000); 
     yield();
     
     int httpCode = http.GET();
@@ -656,7 +656,7 @@ void saveCurrentOriginal() {
     
     HTTPClient http;
     http.begin(savePath);
-    http.setTimeout(10000);
+    http.setTimeout(30000);
     int httpCode = http.GET();
     http.end();
 
@@ -1034,5 +1034,6 @@ void loop() {
     // Small delay to prevent tight loop (reduces CPU usage)
     delay(5);
 }
+
 
   
