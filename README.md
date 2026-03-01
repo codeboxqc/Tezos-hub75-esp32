@@ -4,7 +4,8 @@
 
 
 
-
+update.php
+update2.php you can edit and use your own tez link rename to uptade,php
 
 
 https://github.com/user-attachments/assets/0d2a4143-b274-4ebd-975b-8db7fc55a740
